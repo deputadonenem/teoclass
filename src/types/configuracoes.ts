@@ -46,6 +46,15 @@ export interface ToggleTeamMemberStatusInput {
 export interface InstitutionSettingsDTO {
   tenant: Tenant;
   team_members: TeamMemberDTO[];
+  gateway_summary?: {
+    isConfigured: boolean;
+    provider: string;
+    isActive: boolean;
+    environment: "sandbox" | "production";
+    apiKeyLastFour: string | null;
+    accountNumber: string | null;
+    updatedAt: string | null;
+  } | null;
   plan_entitlements: {
     plan_tier: PlanTier;
     features: {

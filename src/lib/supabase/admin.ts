@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database";
 import { isSupabaseAdminConfigured } from "./config";
 
 /**
@@ -16,7 +15,7 @@ export function createAdminClient() {
     );
   }
 
-  return createClient<Database>(url, serviceKey, {
+  return createClient(url, serviceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

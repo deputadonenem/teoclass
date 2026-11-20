@@ -15,6 +15,7 @@ import {
 import { FinancialPlanModal } from "./FinancialPlanModal";
 import { RecordPaymentModal } from "./RecordPaymentModal";
 import { GenerateInstallmentsModal } from "./GenerateInstallmentsModal";
+import { AsaasChargeModal } from "./AsaasChargeModal";
 import { reversePaymentAction } from "@/app/actions/financeiro";
 import {
   DollarSign,
@@ -29,6 +30,7 @@ import {
   Filter,
   Eye,
   RotateCcw,
+  QrCode,
 } from "lucide-react";
 
 interface FinanceiroClientProps {
@@ -67,6 +69,7 @@ export function FinanceiroClient({
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [paymentModalReceivable, setPaymentModalReceivable] = useState<Receivable | null>(null);
+  const [asaasModalReceivable, setAsaasModalReceivable] = useState<Receivable | null>(null);
 
   const canManage = userRole === "admin" || userRole === "financeiro";
 
@@ -300,25 +303,39 @@ export function FinanceiroClient({
                       </td>
                       <td className="px-4 py-4 text-center">{getStatusBadge(rec.status)}</td>
                       <td className="px-5 py-4 text-right">
-                        {canManage && rec.status !== "pago" && (
-                          <button
-                            onClick={() => setPaymentModalReceivable(rec)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 transition"
-                          >
-                            <DollarSign className="w-3.5 h-3.5" />
-                            Baixar
-                          </button>
-                        )}
-                        {canManage && rec.status === "pago" && rec.payments && rec.payments.length > 0 && (
-                          <button
-                            onClick={() => handleReversePayment(rec.payments![0].id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs text-rose-600 hover:bg-rose-50 transition"
-                            title="Estornar pagamento"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            Estornar
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-1.5">
+                          {canManage && rec.status !== "pago" && (
+                            <>
+                              <button
+                                onClick={() => setAsaasModalReceivable(rec)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 transition"
+                                title="Emitir Pix / Boleto Asaas"
+                              >
+                                <QrCode className="w-3.5 h-3.5" />
+                                {rec.gateway_charge_id ? "Ver Asaas" : "Asaas"}
+                              </button>
+
+                              <button
+                                onClick={() => setPaymentModalReceivable(rec)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 transition"
+                                title="Baixa manual na tesouraria"
+                              >
+                                <DollarSign className="w-3.5 h-3.5" />
+                                Baixar
+                              </button>
+                            </>
+                          )}
+                          {canManage && rec.status === "pago" && rec.payments && rec.payments.length > 0 && (
+                            <button
+                              onClick={() => handleReversePayment(rec.payments![0].id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs text-rose-600 hover:bg-rose-50 transition"
+                              title="Estornar pagamento"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Estornar
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -406,6 +423,17 @@ export function FinanceiroClient({
           onClose={() => setPaymentModalReceivable(null)}
           onSuccess={() => {
             setPaymentModalReceivable(null);
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {asaasModalReceivable && (
+        <AsaasChargeModal
+          isOpen={Boolean(asaasModalReceivable)}
+          receivable={asaasModalReceivable}
+          onClose={() => setAsaasModalReceivable(null)}
+          onSuccess={() => {
             window.location.reload();
           }}
         />

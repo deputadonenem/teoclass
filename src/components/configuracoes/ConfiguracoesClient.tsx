@@ -5,6 +5,7 @@ import {
   Building2,
   Users,
   ShieldCheck,
+  CreditCard,
   Sparkles,
   Save,
   UserPlus,
@@ -17,6 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { InstitutionSettingsDTO, UpdateInstitutionInput } from "@/types/configuracoes";
+import { SchoolPaymentGatewaySettings } from "./SchoolPaymentGatewaySettings";
 import {
   updateInstitutionAction,
   inviteTeamMemberAction,
@@ -30,7 +32,7 @@ interface ConfiguracoesClientProps {
 
 export function ConfiguracoesClient({ initialData }: ConfiguracoesClientProps) {
   const [data, setData] = useState<InstitutionSettingsDTO>(initialData);
-  const [activeTab, setActiveTab] = useState<"instituicao" | "equipe" | "plano">("instituicao");
+  const [activeTab, setActiveTab] = useState<"instituicao" | "equipe" | "pagamentos" | "plano">("instituicao");
 
   // Form Instituição
   const [instForm, setInstForm] = useState<UpdateInstitutionInput>({
@@ -222,6 +224,17 @@ export function ConfiguracoesClient({ initialData }: ConfiguracoesClientProps) {
         >
           <Users className="w-4 h-4" />
           Equipe & Acessos ({data.team_members.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("pagamentos")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
+            activeTab === "pagamentos"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          Pagamentos da Escola
         </button>
         <button
           onClick={() => setActiveTab("plano")}
@@ -518,7 +531,12 @@ export function ConfiguracoesClient({ initialData }: ConfiguracoesClientProps) {
         </div>
       )}
 
-      {/* Tab 3: Plano & Entitlements */}
+      {/* Tab 3: Pagamentos da Escola (Gateway Asaas) */}
+      {activeTab === "pagamentos" && (
+        <SchoolPaymentGatewaySettings initialSummary={data.gateway_summary} />
+      )}
+
+      {/* Tab 4: Plano & Entitlements */}
       {activeTab === "plano" && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
           <div className="flex items-start justify-between">

@@ -25,7 +25,8 @@ export interface GatewayEventRegistrationResult {
 
 /**
  * Registra o evento de entrada do gateway de forma atômica.
- * Retorna isDuplicate: true se o evento já havia sido registrado anteriormente.
+ * Retorna isDuplicate: true se o evento já havia sido registrado e concluído.
+ * Se o evento anterior estava em status 'failed', permite reprocessamento retornando o id existente.
  */
 export async function registerIncomingGatewayEvent(
   params: RecordGatewayEventParams
@@ -49,8 +50,34 @@ export async function registerIncomingGatewayEvent(
   if (error) {
     // Código de violação de unicidade no PostgreSQL
     if (error.code === "23505" || error.message?.includes("uq_gateway_events_idempotency")) {
+      // Consulta o status do evento pré-existente
+      const { data: existing } = await (admin.from("gateway_events") as any)
+        .select("id, status")
+        .eq("tenant_id", params.tenantId)
+        .eq("provider", params.provider)
+        .eq("event_id", params.eventId)
+        .maybeSingle();
+
+      // Se o evento anterior falhou (ex: falha transitória de rede ou timeout),
+      // permite reprocessamento sem duplicar a chave única
+      if (existing && existing.status === "failed") {
+        await (admin.from("gateway_events") as any)
+          .update({
+            status: "received",
+            error_message: null,
+            processed_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+
+        return {
+          isDuplicate: false,
+          eventRecordId: existing.id,
+        };
+      }
+
       return {
         isDuplicate: true,
+        eventRecordId: existing?.id,
       };
     }
 

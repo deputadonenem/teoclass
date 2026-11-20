@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getSafeTenantGatewayConfig } from "@/lib/financeiro/gateway_vault";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireTenantSession } from "@/lib/tenant/resolver";
 import { assertPermission } from "@/lib/rbac/permissions";
@@ -69,11 +70,14 @@ export async function getInstitutionSettingsAction(): Promise<{
       created_at: m.created_at,
     }));
 
-    // 3. Monta direitos do plano
+    // 3. Monta direitos do plano e resumo seguro de gateway
     const plan_tier = tenantData.plan_tier || "gestao";
+    const gatewaySummary = await getSafeTenantGatewayConfig(session.tenant.id, "asaas");
+
     const settingsDTO: InstitutionSettingsDTO = {
       tenant: tenantData,
       team_members,
+      gateway_summary: gatewaySummary,
       plan_entitlements: {
         plan_tier,
         features: {

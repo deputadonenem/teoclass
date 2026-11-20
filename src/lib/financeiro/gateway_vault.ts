@@ -99,6 +99,8 @@ export async function saveTenantGatewayConfig(
         api_key_encrypted: apiKeyEncrypted,
         api_key_last_four: apiKeyLastFour,
         webhook_access_token_encrypted: webhookTokenEncrypted,
+        account_number: (input as any).account_number || null,
+        wallet_id: (input as any).wallet_id || null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "tenant_id,provider" }
@@ -111,6 +113,58 @@ export async function saveTenantGatewayConfig(
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || "Falha ao cifrar e salvar credencial de gateway." };
+  }
+}
+
+/**
+ * Ativa ou desativa a integração de gateway do tenant com segurança.
+ */
+export async function toggleTenantGatewayActive(
+  tenantId: string,
+  isActive: boolean,
+  provider: GatewayProvider = "asaas"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const { error } = await (admin.from("tenant_gateway_configs") as any)
+      .update({
+        is_active: isActive,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("tenant_id", tenantId)
+      .eq("provider", provider);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Falha ao alternar status do gateway." };
+  }
+}
+
+/**
+ * Remove/Desconecta totalmente a configuração de gateway de um tenant.
+ */
+export async function removeTenantGatewayConfig(
+  tenantId: string,
+  provider: GatewayProvider = "asaas"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const { error } = await (admin.from("tenant_gateway_configs") as any)
+      .delete()
+      .eq("tenant_id", tenantId)
+      .eq("provider", provider);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Falha ao remover configuração de gateway." };
   }
 }
 
