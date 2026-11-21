@@ -174,18 +174,23 @@ export function Hero({
       {/* 
         ========================================================================
         2. VERSÃO MOBILE & TABLET (abaixo de 1024px: 360px, 390px, 430px, 768px)
-        Composição Vertical Perfeita:
-        - Bloco superior azul-marinho: texto limpo, 100% legível, sem sobreposição
-        - Bloco inferior fotográfico: bg_hero.png como background-image cover
-          exibindo o laptop e estudantes com livros, sem cards ou molduras
+        Fidelidade Estrita ao Mockup Mobile:
+        - Fundo azul-marinho profundo uniforme (#0B1D33)
+        - Badge compacto
+        - Título H1 expressivo e proporcional
+        - Subtítulo
+        - Checklist em 2 colunas com checks dourados
+        - Botão dourado "Conhecer o TeoClass" em largura total
+        - Botão contorno "Solicitar demonstração" em largura total
+        - Imagem bg_hero.png com enquadramento completo (proporção natural 1440x700)
         ========================================================================
       */}
       <div className="lg:hidden flex flex-col w-full bg-[#0B1D33]">
         {/* Bloco Superior: Conteúdo Textual e Ações */}
-        <div className="w-full px-5 py-8 sm:px-8 sm:py-10 space-y-5">
+        <div className="w-full px-5 py-7 sm:px-8 sm:py-9 space-y-4 sm:space-y-5">
           {/* Badge */}
           <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-medium text-slate-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0d2238] border border-slate-700/80 text-[11px] font-medium text-slate-200">
               <svg
                 className="w-3.5 h-3.5 text-[#C9973D] shrink-0"
                 fill="none"
@@ -204,7 +209,7 @@ export function Hero({
           </div>
 
           {/* Título Principal */}
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight font-serif">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-[1.18] font-serif">
             Sua instituição ensina.{" "}
             <span className="text-[#C9973D] block">
               O TeoClass organiza
@@ -213,42 +218,68 @@ export function Hero({
           </h1>
 
           {/* Subtítulo */}
-          <p className="text-sm text-slate-300 leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
             A plataforma completa para escolas teológicas, seminários e
             institutos bíblicos que desejam mais organização, eficiência e
             alcance na formação ministerial.
           </p>
 
-          {/* Checklist em coluna única ou 2 colunas leves no tablet */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-            {checklistItems.map((item) => (
-              <div key={item} className="flex items-center gap-2">
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-[#C9973D]/25 text-[#C9973D] shrink-0">
-                  <svg
-                    className="w-3 h-3 stroke-[2.5]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </span>
-                <span className="text-xs sm:text-sm font-medium text-slate-200">
-                  {item}
-                </span>
-              </div>
-            ))}
+          {/* Checklist em 2 Colunas exatamente como no mockup */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-0.5">
+            <div className="space-y-2">
+              {checklistCol1.map((item) => (
+                <div key={item} className="flex items-center gap-1.5">
+                  <span className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#C9973D]/25 text-[#C9973D] shrink-0">
+                    <svg
+                      className="w-2.5 h-2.5 stroke-[3]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
+                  <span className="text-[11px] sm:text-xs font-medium text-slate-200 truncate">
+                    {item}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              {checklistCol2.map((item) => (
+                <div key={item} className="flex items-center gap-1.5">
+                  <span className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#C9973D]/25 text-[#C9973D] shrink-0">
+                    <svg
+                      className="w-2.5 h-2.5 stroke-[3]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
+                  <span className="text-[11px] sm:text-xs font-medium text-slate-200 truncate">
+                    {item}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Botões de Ação Mobile com ampla área de toque */}
-          <div className="flex flex-col sm:flex-row items-stretch gap-3 pt-2">
+          {/* Botões de Ação Mobile Empilhados em Largura Total */}
+          <div className="flex flex-col gap-2.5 pt-2">
             <a
               href="#recursos"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-lg bg-[#C9973D] hover:bg-[#B38432] text-white text-sm font-semibold shadow-md transition-all text-center"
+              className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-lg bg-[#C9973D] hover:bg-[#B38432] text-white text-sm font-semibold shadow-md transition-all text-center"
             >
               <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
@@ -259,7 +290,7 @@ export function Hero({
             <button
               type="button"
               onClick={onOpenDemo}
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-3 rounded-lg border border-slate-600 bg-slate-800/80 hover:bg-slate-800 text-slate-200 hover:text-white text-sm font-medium transition-all cursor-pointer text-center"
+              className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-slate-600 bg-[#0d2238] hover:bg-[#122b46] text-slate-200 hover:text-white text-sm font-medium transition-all cursor-pointer text-center"
             >
               <svg
                 className="w-4 h-4 text-slate-400"
@@ -279,12 +310,11 @@ export function Hero({
           </div>
         </div>
 
-        {/* Bloco Inferior: Área Fotográfica com bg_hero.png como background nativo */}
+        {/* Bloco Inferior: Fotografia na proporção natural (1440x700 -> aspect-[1440/700]) */}
         <div
-          className="w-full h-[280px] sm:h-[360px] md:h-[420px] bg-no-repeat bg-cover"
+          className="w-full aspect-[1440/700] bg-no-repeat bg-cover bg-center"
           style={{
             backgroundImage: "url('/img/bg_hero.png')",
-            backgroundPosition: "right bottom",
           }}
           aria-hidden="true"
         />
