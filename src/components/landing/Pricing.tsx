@@ -31,7 +31,7 @@ export function Pricing({
     {
       id: "gestao_ead",
       name: "Gestão + EAD",
-      badge: "Mais escolhido",
+      badge: "Gestão + EAD",
       subtitle: "Gestão completa com ambiente EAD integrado para cursos presenciais, semipresenciais ou 100% online.",
       features: [
         "Tudo do plano Gestão",
