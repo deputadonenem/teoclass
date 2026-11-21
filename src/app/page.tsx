@@ -7,25 +7,25 @@ import { Benefits } from "@/components/landing/Benefits";
 import { TargetAudience } from "@/components/landing/TargetAudience";
 import { Pricing } from "@/components/landing/Pricing";
 import { Footer } from "@/components/landing/Footer";
-import { DemoModal } from "@/components/landing/DemoModal";
+import { TrialRegistrationModal } from "@/components/landing/TrialRegistrationModal";
 
 export default function HomePage() {
-  const [demoOpen, setDemoOpen] = useState(false);
+  const [trialOpen, setTrialOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>("Gestão + EAD");
 
-  const handleOpenDemoWithPlan = (planName: string) => {
+  const handleOpenTrialWithPlan = (planName: string) => {
     setSelectedPlan(planName);
-    setDemoOpen(true);
+    setTrialOpen(true);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Topo / Navbar */}
-      <Header onOpenDemo={() => setDemoOpen(true)} />
+      <Header onOpenDemo={() => setTrialOpen(true)} />
 
       {/* Hero Section */}
       <main className="flex-1">
-        <Hero onOpenDemo={() => setDemoOpen(true)} />
+        <Hero onOpenDemo={() => setTrialOpen(true)} />
         
         {/* Benefícios e Recursos Principais */}
         <Benefits />
@@ -34,16 +34,16 @@ export default function HomePage() {
         <TargetAudience />
 
         {/* Seção de Planos Institucionais */}
-        <Pricing onSelectPlan={handleOpenDemoWithPlan} />
+        <Pricing onSelectPlan={handleOpenTrialWithPlan} />
       </main>
 
       {/* Rodapé Institucional */}
       <Footer />
 
-      {/* Modal Interativo para Solicitar Demonstração / Contato */}
-      <DemoModal
-        isOpen={demoOpen}
-        onClose={() => setDemoOpen(false)}
+      {/* Modal Interativo para Cadastro do Teste Grátis de 7 Dias */}
+      <TrialRegistrationModal
+        isOpen={trialOpen}
+        onClose={() => setTrialOpen(false)}
         initialPlan={selectedPlan}
       />
     </div>

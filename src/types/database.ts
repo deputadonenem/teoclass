@@ -9,7 +9,7 @@ export type TeoClassRole =
   | "professor"   // Corpo docente
   | "aluno";      // Discente
 
-export type TenantStatus = "active" | "suspended" | "trial" | "inactive";
+export type TenantStatus = "active" | "suspended" | "trial" | "inactive" | "trial_pending" | "trial_expired";
 export type PlanTier = "gestao" | "gestao_ead" | "institucional";
 
 export interface Tenant {
@@ -22,6 +22,7 @@ export interface Tenant {
   phone: string | null;
   status: TenantStatus;
   plan_tier: PlanTier;
+  trial_ends_at?: string | null;
   logo_url?: string | null;
   primary_color?: string | null;
   website?: string | null;

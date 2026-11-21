@@ -83,6 +83,7 @@ export async function resolveTenantSession(): Promise<TenantResolutionResult> {
         phone,
         status,
         plan_tier,
+        trial_ends_at,
         settings,
         created_at,
         updated_at
@@ -128,6 +129,16 @@ export async function resolveTenantSession(): Promise<TenantResolutionResult> {
   // Fallback para o primeiro tenant válido caso o preferencial não exista ou não pertença ao usuário
   if (!activeMembership || !activeMembership.tenant || activeMembership.tenant.status === "inactive") {
     activeMembership = typedMemberships.find((m) => m.tenant && m.tenant.status !== "inactive")!;
+  }
+
+  // Verificação Server-Side de Expiração de Trial
+  if (
+    activeMembership.tenant.status === "trial" &&
+    activeMembership.tenant.trial_ends_at &&
+    new Date() > new Date(activeMembership.tenant.trial_ends_at)
+  ) {
+    // Marca em memória como trial_expired para bloquear ações administrativas e direcionar para contratação
+    activeMembership.tenant.status = "trial_expired";
   }
 
   const session: AuthenticatedTenantSession = {

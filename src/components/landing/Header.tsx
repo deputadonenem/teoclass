@@ -127,7 +127,7 @@ export function Header({
               onClick={onOpenDemo}
               className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-[#C9973D] hover:bg-[#B38432] text-white text-sm font-semibold shadow-xs hover:shadow-md transition-all cursor-pointer"
             >
-              Solicitar demonstração
+              Teste grátis por 7 dias
             </button>
           </div>
 
@@ -273,7 +273,7 @@ export function Header({
                 }}
                 className="w-full inline-flex items-center justify-center h-11 px-4 rounded-lg bg-[#C9973D] hover:bg-[#B38432] text-white text-sm font-semibold shadow-md transition-all cursor-pointer"
               >
-                Solicitar demonstração
+                Teste grátis por 7 dias
               </button>
             </div>
           </div>

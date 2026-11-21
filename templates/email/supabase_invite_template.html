@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ative seu Teste Grátis no TeoClass</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #050B14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #E2E8F0; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #050B14; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Container Principal -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 580px; background-color: #0B1D33; border: 1px solid #1E293B; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
+          
+          <!-- Topo com Identidade Visual -->
+          <tr>
+            <td align="center" style="padding: 36px 32px 24px 32px; background: linear-gradient(180deg, #0f2744 0%, #0B1D33 100%); border-bottom: 1px solid #1E293B;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center">
+                    <!-- Símbolo / Cruz Dourada Minimalista -->
+                    <div style="display: inline-block; width: 44px; height: 44px; line-height: 44px; background: linear-gradient(135deg, #DFB76C 0%, #C9973D 50%, #9E7224 100%); border-radius: 12px; text-align: center; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(201, 151, 61, 0.3);">
+                      <span style="color: #0B1D33; font-size: 24px; font-weight: bold; line-height: 44px; display: inline-block;">✝</span>
+                    </div>
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF;">
+                      Teo<span style="color: #C9973D;">Class</span>
+                    </h1>
+                    <p style="margin: 6px 0 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #C9973D; font-weight: 700;">
+                      Plataforma de Gestão Teológica & EAD
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Corpo Principal do E-mail -->
+          <tr>
+            <td style="padding: 36px 36px 28px 36px;">
+              <!-- Badge Trial -->
+              <div style="display: inline-block; background-color: rgba(201, 151, 61, 0.15); border: 1px solid rgba(201, 151, 61, 0.4); padding: 5px 14px; border-radius: 9999px; margin-bottom: 20px;">
+                <span style="color: #DFB76C; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                  ★ Teste Grátis Liberado por 7 Dias
+                </span>
+              </div>
+
+              <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #FFFFFF; line-height: 1.3;">
+                Sua instituição está a um passo de começar.
+              </h2>
+
+              <p style="margin: 0 0 18px 0; font-size: 14px; line-height: 1.6; color: #CBD5E1;">
+                Olá! Recebemos sua solicitação de cadastro para o <strong>Teste Grátis de 7 Dias</strong> no TeoClass.
+              </p>
+
+              <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #94A3B8;">
+                Durante o período de avaliação, sua instituição teológica terá <strong>acesso total a todos os recursos</strong> da plataforma, incluindo Secretaria Digital, Gestão Financeira, Sala Virtual EAD e Portal do Aluno.
+              </p>
+
+              <!-- Caixa de Ação / Botão de Ativação -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 28px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #DFB76C 0%, #C9973D 50%, #9E7224 100%); color: #0B1D33; text-decoration: none; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 32px; border-radius: 12px; box-shadow: 0 10px 20px -5px rgba(201, 151, 61, 0.4); border: 1px solid #DFB76C;">
+                      Ativar Minha Conta & Iniciar Teste →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Aviso de Validade e Segurança -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #071526; border: 1px solid #1E293B; border-radius: 12px; padding: 14px; margin-top: 24px;">
+                <tr>
+                  <td>
+                    <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #94A3B8;">
+                      🔒 <strong style="color: #E2E8F0;">Segurança da Conta:</strong> Ao clicar no botão, você definirá sua senha de acesso administrativo. A contagem dos 7 dias começará somente após essa ativação.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 24px 0 0 0; font-size: 11px; line-height: 1.5; color: #64748B;">
+                Se o botão não funcionar, copie e cole o link a seguir no seu navegador:<br>
+                <a href="{{ .ConfirmationURL }}" style="color: #C9973D; word-break: break-all; text-decoration: underline;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Rodapé do E-mail -->
+          <tr>
+            <td align="center" style="padding: 24px 32px; background-color: #071220; border-top: 1px solid #1E293B;">
+              <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748B;">
+                © 2026 TeoClass — Sistema de Gestão para Institutos e Seminários Teológicos.
+              </p>
+              <p style="margin: 0; font-size: 10px; color: #475569;">
+                Se você não solicitou este teste institucional, desconsidere esta mensagem com segurança.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

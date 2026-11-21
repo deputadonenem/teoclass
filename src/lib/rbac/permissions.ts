@@ -218,8 +218,26 @@ export function hasActionAccess(role: TeoClassRole, action: TeoClassAction): boo
 /**
  * Asserção de permissão para uso direto no servidor.
  * Lança erro caso a ação não seja autorizada.
+ * Bloqueia operações ativas caso a instituição esteja com teste grátis expirado ou pendente de ativação.
  */
-export function assertPermission(role: TeoClassRole, action: TeoClassAction): void {
+export function assertPermission(
+  role: TeoClassRole,
+  action: TeoClassAction,
+  tenantStatus?: string
+): void {
+  // 1. Bloqueio de Operações Administrativas/Operacionais se o Trial estiver expirado ou pendente
+  if (tenantStatus === "trial_expired") {
+    throw new Error(
+      "Período de teste grátis encerrado. Para continuar gerenciando a instituição, realize a contratação do plano."
+    );
+  }
+  if (tenantStatus === "trial_pending") {
+    throw new Error(
+      "Instituição pendente de ativação por e-mail. Por favor, confirme seu link de ativação antes de operar."
+    );
+  }
+
+  // 2. Validação padrão de RBAC por perfil
   if (!hasActionAccess(role, action)) {
     throw new Error(`Acesso negado: o perfil '${role}' não tem permissão para '${action}'.`);
   }

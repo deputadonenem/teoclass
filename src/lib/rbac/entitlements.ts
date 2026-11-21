@@ -1,6 +1,26 @@
 import type { PlanTier, TeoClassModule, TeoClassAction } from "./permissions";
+import type { TenantStatus } from "@/types/database";
 
 export type { PlanTier };
+
+/**
+ * Verifica se um tenant está em período de teste gratuito ativo no servidor.
+ */
+export function isTenantTrialActive(status: TenantStatus, trialEndsAt?: string | null): boolean {
+  if (status !== "trial" || !trialEndsAt) return false;
+  return new Date() <= new Date(trialEndsAt);
+}
+
+/**
+ * Verifica se o período de teste do tenant expirou.
+ */
+export function isTenantTrialExpired(status: TenantStatus, trialEndsAt?: string | null): boolean {
+  if (status === "trial_expired") return true;
+  if (status === "trial" && trialEndsAt) {
+    return new Date() > new Date(trialEndsAt);
+  }
+  return false;
+}
 
 /**
  * Recursos e Módulos autorizados por Plano SaaS (Decisão Comercial TeoClass Lote 20)
@@ -63,8 +83,17 @@ export const PLAN_BLOCKED_ACTIONS: Record<PlanTier, TeoClassAction[]> = {
 
 /**
  * Verifica se um plano SaaS contratado concede acesso a determinado módulo.
+ * Durante o trial ativo (status = 'trial' e vigência comprovada), todos os módulos são liberados.
  */
-export function hasPlanModuleAccess(planTier: PlanTier, module: TeoClassModule): boolean {
+export function hasPlanModuleAccess(
+  planTier: PlanTier,
+  module: TeoClassModule,
+  tenantStatus?: TenantStatus,
+  trialEndsAt?: string | null
+): boolean {
+  if (tenantStatus && isTenantTrialActive(tenantStatus, trialEndsAt)) {
+    return true; // Trial ativo tem acesso completo a todas as funcionalidades
+  }
   const allowed = PLAN_MODULE_ENTITLEMENTS[planTier] || PLAN_MODULE_ENTITLEMENTS.gestao;
   return allowed.includes(module);
 }
@@ -72,7 +101,15 @@ export function hasPlanModuleAccess(planTier: PlanTier, module: TeoClassModule):
 /**
  * Verifica se uma ação é permitida sob o plano comercial ativo.
  */
-export function hasPlanActionAccess(planTier: PlanTier, action: TeoClassAction): boolean {
+export function hasPlanActionAccess(
+  planTier: PlanTier,
+  action: TeoClassAction,
+  tenantStatus?: TenantStatus,
+  trialEndsAt?: string | null
+): boolean {
+  if (tenantStatus && isTenantTrialActive(tenantStatus, trialEndsAt)) {
+    return true;
+  }
   const blocked = PLAN_BLOCKED_ACTIONS[planTier] || [];
   return !blocked.includes(action);
 }
@@ -81,7 +118,17 @@ export function hasPlanActionAccess(planTier: PlanTier, action: TeoClassAction):
  * Asserção de Entitlement do Plano SaaS para execução no servidor.
  * Lança erro com mensagem cordial e explicativa caso o plano não contemple o recurso.
  */
-export function assertPlanEntitlement(planTier: PlanTier, actionOrModule: TeoClassAction | TeoClassModule): void {
+export function assertPlanEntitlement(
+  planTier: PlanTier,
+  actionOrModule: TeoClassAction | TeoClassModule,
+  tenantStatus?: TenantStatus,
+  trialEndsAt?: string | null
+): void {
+  // Se estiver em trial ativo, todas as operações são liberadas
+  if (tenantStatus && isTenantTrialActive(tenantStatus, trialEndsAt)) {
+    return;
+  }
+
   // Se for módulo
   if (
     actionOrModule === "ead" ||
@@ -91,7 +138,7 @@ export function assertPlanEntitlement(planTier: PlanTier, actionOrModule: TeoCla
     actionOrModule === "certificados" ||
     actionOrModule === "captacao"
   ) {
-    if (!hasPlanModuleAccess(planTier, actionOrModule as TeoClassModule)) {
+    if (!hasPlanModuleAccess(planTier, actionOrModule as TeoClassModule, tenantStatus, trialEndsAt)) {
       throw new Error(
         `Recurso indisponível: o módulo '${actionOrModule}' não faz parte do plano contratado (${planTier.toUpperCase()}). Solicite um upgrade para Gestão + EAD.`
       );
@@ -99,7 +146,7 @@ export function assertPlanEntitlement(planTier: PlanTier, actionOrModule: TeoCla
   }
 
   // Se for ação granular
-  if (!hasPlanActionAccess(planTier, actionOrModule as TeoClassAction)) {
+  if (!hasPlanActionAccess(planTier, actionOrModule as TeoClassAction, tenantStatus, trialEndsAt)) {
     throw new Error(
       `Operação não permitida no plano '${planTier.toUpperCase()}'. Este recurso requer o plano 'Gestão + EAD' ou superior.`
     );
