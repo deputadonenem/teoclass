@@ -47,6 +47,8 @@ export interface PublicSchoolInfo {
   name: string;
   trade_name: string | null;
   slug: string;
+  plan_tier: string;
+  has_portal_access: boolean;
   settings: PublicPageSettings;
   courses: PublicCourseSummary[];
 }

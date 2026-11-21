@@ -3,19 +3,18 @@ import type { PlanTier, TeoClassModule, TeoClassAction } from "./permissions";
 export type { PlanTier };
 
 /**
- * Recursos e Módulos autorizados por Plano SaaS (Seção 2 da Especificação TeoClass)
+ * Recursos e Módulos autorizados por Plano SaaS (Decisão Comercial TeoClass Lote 20)
  * 
- * - 'gestao': Secretaria, Alunos, Cursos, Turmas, Equipe, Financeiro Escolar, Certificados.
- *             SEM sala de aula EAD e SEM banco de provas.
- * - 'gestao_ead': Tudo do plano Gestão + EAD assíncrono + Materiais PDF + Banco de Questões e Provas.
- * - 'institucional': Todos os recursos do TeoClass com limites personalizados.
+ * - 'gestao': Secretaria Acadêmica, Cursos, Turmas, Equipe, Financeiro Escolar, Certificados.
+ *             NÃO inclui Portal do Aluno individual, NÃO inclui página pública institucional, NÃO inclui EAD.
+ * - 'gestao_ead': Tudo do plano Gestão + Página Pública da Instituição + Portal do Aluno + EAD assíncrono + Banco de Questões e Provas.
+ * - 'institucional': Todos os recursos do TeoClass com limites personalizados e suporte a múltiplos polos/extensões.
  */
 export const PLAN_MODULE_ENTITLEMENTS: Record<PlanTier, TeoClassModule[]> = {
   gestao: [
     "inicio",
     "secretaria",
     "academico",
-    "portal_aluno",
     "financeiro",
     "certificados",
     "captacao",
@@ -87,6 +86,7 @@ export function assertPlanEntitlement(planTier: PlanTier, actionOrModule: TeoCla
   if (
     actionOrModule === "ead" ||
     actionOrModule === "provas" ||
+    actionOrModule === "portal_aluno" ||
     actionOrModule === "financeiro" ||
     actionOrModule === "certificados" ||
     actionOrModule === "captacao"

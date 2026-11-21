@@ -34,15 +34,24 @@ export async function getPublicSchoolInfoAction(slug: string): Promise<{
     const cleanSlug = slug.trim().toLowerCase();
     const admin = createAdminClient();
 
-    // 1. Busca dados cadastrais do tenant ativo estritamente por slug
+    // 1. Busca dados cadastrais do tenant ativo estritamente por slug (incluindo plan_tier)
     const { data: tenant, error: tErr } = await (admin.from("tenants") as any)
-      .select("id, name, trade_name, slug, email, phone, status")
+      .select("id, name, trade_name, slug, email, phone, status, plan_tier")
       .eq("slug", cleanSlug)
       .eq("status", "active")
       .single();
 
     if (tErr || !tenant) {
       return { data: null, error: "Escola teológica não encontrada ou inativa." };
+    }
+
+    // Regra Comercial Lote 20: Plano 'gestao' NÃO inclui página pública institucional
+    const planTier = tenant.plan_tier || "gestao";
+    if (planTier === "gestao") {
+      return {
+        data: null,
+        error: "A página pública institucional não está habilitada para o plano desta escola (requer plano Gestão + EAD ou Institucional).",
+      };
     }
 
     // 2. Busca configurações da página pública
@@ -110,6 +119,8 @@ export async function getPublicSchoolInfoAction(slug: string): Promise<{
         name: tenant.name,
         trade_name: tenant.trade_name,
         slug: tenant.slug,
+        plan_tier: planTier,
+        has_portal_access: planTier !== "gestao",
         settings,
         courses,
       },

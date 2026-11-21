@@ -225,6 +225,15 @@ export async function getStudentPortalDataAction(): Promise<{
 }> {
   try {
     const session = await requireTenantSession();
+
+    // 0. Bloqueio por Entitlement de Plano
+    if (session.tenant.plan_tier === "gestao") {
+      return {
+        data: null,
+        error: "O plano 'Gestão' da sua instituição não inclui acesso ao Portal do Aluno. Necessário plano Gestão + EAD.",
+      };
+    }
+
     if (session.role !== "aluno") {
       return { data: null, error: "Acesso restrito a discentes." };
     }

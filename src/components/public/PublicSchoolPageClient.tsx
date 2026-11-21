@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import type { PublicSchoolInfo, SubmitLeadDTO } from "@/types/captacao";
 import { submitPublicLeadAction, sendPublicChatMessageAction } from "@/app/actions/captacao";
+import { StudentLoginModal } from "./StudentLoginModal";
 import {
   BookOpen,
   Clock,
@@ -70,6 +71,7 @@ export function PublicSchoolPageClient({ school }: PublicSchoolPageClientProps) 
   ]);
   const [inputMsg, setInputMsg] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [studentModalOpen, setStudentModalOpen] = useState(false);
 
   // Manipulador de Envio de Lead
   const handleSubmitLead = async (e: React.FormEvent) => {
@@ -147,6 +149,16 @@ export function PublicSchoolPageClient({ school }: PublicSchoolPageClientProps) 
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {school.has_portal_access && (
+              <button
+                type="button"
+                onClick={() => setStudentModalOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:text-amber-700 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-lg transition-colors border border-slate-200 cursor-pointer"
+              >
+                <GraduationCap className="w-4 h-4 text-amber-600" />
+                <span>Área do Aluno</span>
+              </button>
+            )}
             <a
               href="#inscricao"
               className="text-xs sm:text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors shadow-xs"
@@ -544,6 +556,17 @@ export function PublicSchoolPageClient({ school }: PublicSchoolPageClientProps) 
           </div>
         </div>
       </footer>
+
+      {/* Modal de Autenticação do Aluno (Exclusivo para Planos Elegíveis) */}
+      {school.has_portal_access && (
+        <StudentLoginModal
+          isOpen={studentModalOpen}
+          onClose={() => setStudentModalOpen(false)}
+          schoolName={school.name}
+          schoolSlug={school.slug}
+          tenantId={school.tenant_id}
+        />
+      )}
     </div>
   );
 }
