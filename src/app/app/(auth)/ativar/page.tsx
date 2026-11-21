@@ -16,7 +16,6 @@ import {
   Eye,
   EyeOff,
   Sparkles,
-  Building2,
 } from "lucide-react";
 
 function ActivateContent() {
@@ -24,6 +23,7 @@ function ActivateContent() {
   const router = useRouter();
   const supabase = createClient();
   const tenantIdParam = searchParams.get("tenant_id") || undefined;
+  const urlError = searchParams.get("error");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,38 +31,118 @@ function ActivateContent() {
   const [loading, setLoading] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [sessionActive, setSessionActive] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<{
     tenantName?: string;
     adminEmail?: string;
   } | null>(null);
 
-  // Verifica se o usuário chegou autenticado pelo link mágico/invite do Supabase Auth
   useEffect(() => {
-    async function checkSession() {
+    let isMounted = true;
+
+    async function initAuthSession() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.email) {
-          setCurrentUserEmail(session.user.email);
-        } else {
-          // Também escuta mudança no auth state caso o token do hash seja processado
-          const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
-            if (newSession?.user?.email) {
-              setCurrentUserEmail(newSession.user.email);
-            }
-          });
-          return () => {
-            authListener.subscription.unsubscribe();
-          };
+        if (urlError === "invalid_or_expired_code" || urlError === "invalid_or_expired_token") {
+          if (isMounted) {
+            setErrorMsg("O link de ativação expirou ou já foi utilizado. Solicite um novo teste gratuito.");
+            setAuthChecking(false);
+          }
+          return;
         }
+
+        // 1. Verifica se há hash com tokens implícitos na URL (#access_token=...&refresh_token=...)
+        if (typeof window !== "undefined" && window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+          const hashError = hashParams.get("error_description") || hashParams.get("error");
+
+          if (hashError) {
+            if (isMounted) {
+              setErrorMsg(decodeURIComponent(hashError));
+              setAuthChecking(false);
+            }
+            return;
+          }
+
+          if (accessToken && refreshToken) {
+            // Estabelece a sessão no cliente Supabase usando os tokens do hash
+            const { data: setSessionData, error: setSessionErr } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (setSessionErr) {
+              console.error("Erro ao setar sessão via hash:", setSessionErr);
+            } else if (setSessionData?.user?.email && isMounted) {
+              setCurrentUserEmail(setSessionData.user.email);
+              setSessionActive(true);
+              setAuthChecking(false);
+              // Limpa o hash da URL para segurança sem recarregar a página
+              window.history.replaceState(null, "", window.location.pathname + window.location.search);
+              return;
+            }
+          }
+        }
+
+        // 2. Se houver 'code' nos searchParams (PKCE não tratado pela rota /auth/confirm)
+        const code = searchParams.get("code");
+        if (code) {
+          const { data: codeData, error: codeErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (codeErr) {
+            console.error("Erro ao trocar code por sessão:", codeErr);
+          } else if (codeData?.user?.email && isMounted) {
+            setCurrentUserEmail(codeData.user.email);
+            setSessionActive(true);
+            setAuthChecking(false);
+            return;
+          }
+        }
+
+        // 3. Verifica sessão ativa nos cookies/armazenamento local
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email && isMounted) {
+          setCurrentUserEmail(session.user.email);
+          setSessionActive(true);
+          setAuthChecking(false);
+          return;
+        }
+
+        // 4. Se não encontrou de imediato, aguarda o listener de autenticação
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+          if (newSession?.user?.email && isMounted) {
+            setCurrentUserEmail(newSession.user.email);
+            setSessionActive(true);
+            setAuthChecking(false);
+          }
+        });
+
+        // Timeout preventivo de 4 segundos para evitar travamento em loading
+        const timer = setTimeout(() => {
+          if (isMounted) {
+            setAuthChecking(false);
+          }
+        }, 4000);
+
+        return () => {
+          clearTimeout(timer);
+          authListener.subscription.unsubscribe();
+        };
       } catch (err) {
-        console.error("Erro ao verificar sessão Supabase Auth:", err);
-      } finally {
-        setAuthChecking(false);
+        console.error("Erro na inicialização de sessão:", err);
+        if (isMounted) {
+          setAuthChecking(false);
+        }
       }
     }
-    checkSession();
-  }, [supabase]);
+
+    initAuthSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase, searchParams, urlError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +155,13 @@ function ActivateContent() {
 
     if (password !== confirmPassword) {
       setErrorMsg("As senhas informadas não coincidem.");
+      return;
+    }
+
+    // Validação estrita de sessão antes de submeter
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (!currentSession || !currentSession.user) {
+      setErrorMsg("Sessão de autenticação não identificada. Por favor, acesse o link enviado para o seu e-mail novamente.");
       return;
     }
 
@@ -121,7 +208,39 @@ function ActivateContent() {
     return (
       <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl text-center space-y-4">
         <Loader2 className="w-8 h-8 animate-spin text-[#C9973D] mx-auto" />
-        <p className="text-xs text-slate-400">Verificando autenticação de acesso...</p>
+        <h3 className="text-sm font-semibold text-white">Validando Link de Ativação</h3>
+        <p className="text-xs text-slate-400">Verificando autenticação e permissões de acesso...</p>
+      </div>
+    );
+  }
+
+  // Se não houver sessão ativa nem e-mail autenticado após a verificação
+  if (!sessionActive && !currentUserEmail) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl text-center space-y-4 max-w-md">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h3 className="text-lg font-bold text-white">Link Inválido ou Sessão Expirada</h3>
+        <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+          {errorMsg ||
+            "Não foi possível identificar uma sessão de convite válida. O link pode ter expirado ou já ter sido utilizado."}
+        </p>
+        <div className="pt-4 flex flex-col gap-2">
+          <Link
+            href="/app/login"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#C9973D] hover:bg-[#B38432] text-slate-950 text-xs font-bold uppercase tracking-wider transition-colors"
+          >
+            <span>Ir para o Login da Gestão</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link
+            href="/"
+            className="text-xs text-slate-400 hover:text-white transition-colors py-2"
+          >
+            Voltar para a página inicial
+          </Link>
+        </div>
       </div>
     );
   }
@@ -144,13 +263,7 @@ function ActivateContent() {
             Ativação de Conta Institucional
           </h2>
           <p className="text-xs text-slate-400">
-            {currentUserEmail ? (
-              <span>
-                Conectado como <strong className="text-white">{currentUserEmail}</strong>. Defina sua senha mestra para concluir a ativação.
-              </span>
-            ) : (
-              <span>Crie sua senha de administrador para iniciar o período de avaliação com acesso total.</span>
-            )}
+            Conectado como <strong className="text-white">{currentUserEmail}</strong>. Defina sua senha mestra para concluir a ativação.
           </p>
         </div>
 
