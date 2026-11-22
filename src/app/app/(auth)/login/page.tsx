@@ -17,6 +17,7 @@ import {
   Users,
   ShieldCheck,
   Briefcase,
+  RotateCcw,
 } from "lucide-react";
 
 export default function TenantLoginPage() {
@@ -25,6 +26,7 @@ export default function TenantLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pendingActivationTenantId, setPendingActivationTenantId] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -32,6 +34,7 @@ export default function TenantLoginPage() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
+    setPendingActivationTenantId(null);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -46,7 +49,7 @@ export default function TenantLoginPage() {
       }
 
       if (data.user) {
-        // Verifica vínculo ativo com qualquer instituição no TeoClass
+        // 1. Verifica vínculos em tenant_users
         const { data: tenantUsers, error: tuErr } = await (supabase
           .from("tenant_users") as any)
           .select("id, is_active, tenant_id, role")
@@ -54,6 +57,23 @@ export default function TenantLoginPage() {
           .eq("is_active", true);
 
         if (tuErr || !tenantUsers || tenantUsers.length === 0) {
+          // 2. Se não tem vínculo ativo, verifica se existe cadastro pendente de ativação (trial_pending)
+          const { data: pendingTenant } = await (supabase
+            .from("tenants") as any)
+            .select("id, name, status")
+            .eq("email", email.toLowerCase())
+            .eq("status", "trial_pending")
+            .maybeSingle();
+
+          if (pendingTenant) {
+            setPendingActivationTenantId(pendingTenant.id);
+            setErrorMsg(
+              `A sua instituição (${pendingTenant.name}) ainda está com a ativação pendente. Conclua a ativação para iniciar o seu período de teste de 7 dias.`
+            );
+            setLoading(false);
+            return;
+          }
+
           await supabase.auth.signOut();
           setErrorMsg(
             "Sua conta não possui vínculo ativo com nenhuma instituição teológica cadastrada."
@@ -158,26 +178,25 @@ export default function TenantLoginPage() {
             </div>
 
             {/* Título Principal Institucional */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight font-serif">
-              Gestão estratégica para <br />
-              <span className="text-[#C9973D]">sua Escola Teológica</span>
-            </h1>
+            <div className="space-y-2">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white font-serif leading-tight">
+                Plataforma Integrada para <br className="hidden sm:inline" />
+                <span className="text-[#C9973D]">Institutos Teológicos</span>
+              </h1>
+              <p className="text-sm sm:text-base text-slate-200 max-w-xl font-normal leading-relaxed">
+                Gestão acadêmica completa, controle financeiro, controle de matrículas e ambiente EAD integrados em uma infraestrutura segura.
+              </p>
+            </div>
 
-            {/* Subtítulo Descritivo */}
-            <p className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed font-normal">
-              Acesso exclusivo para coordenação acadêmica, diretoria, tesouraria e secretaria escolar.
-              Governança ministerial unificada com segurança e isolamento multi-tenant hermético.
-            </p>
-
-            {/* Lista de Recursos em Cards Transparentes com Bordas Sutis */}
-            <div className="space-y-3 pt-2 max-w-xl">
+            {/* Três Pilares Visuais (Cards translúcidos limpos com ícones dourados) */}
+            <div className="space-y-3 pt-2 max-w-lg">
               <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center gap-4 hover:bg-white/10 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/20 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5 text-[#C9973D]" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-white">Secretaria Acadêmica & Alunos</h2>
-                  <p className="text-xs text-slate-300">Matrículas, prontuários, turmas, notas e registros ministeriais</p>
+                  <p className="text-xs text-slate-300">Emissão de boletins, atas e histórico com validade eclesiástica</p>
                 </div>
               </div>
 
@@ -186,7 +205,7 @@ export default function TenantLoginPage() {
                   <Building2 className="w-5 h-5 text-[#C9973D]" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-white">Controle Financeiro & Mensalidades</h2>
+                  <h2 className="text-sm font-bold text-white">Controle Financeiro & Mensalidades Asaas</h2>
                   <p className="text-xs text-slate-300">Cobranças via Pix e Boleto Asaas, conciliação e relatórios de fluxo</p>
                 </div>
               </div>
@@ -231,7 +250,20 @@ export default function TenantLoginPage() {
                 {errorMsg && (
                   <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-700 text-xs animate-in fade-in duration-200">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{errorMsg}</span>
+                    <div className="space-y-1.5 leading-relaxed">
+                      <span>{errorMsg}</span>
+                      {pendingActivationTenantId && (
+                        <div className="pt-1">
+                          <Link
+                            href={`/app/ativar?tenant_id=${pendingActivationTenantId}`}
+                            className="inline-flex items-center gap-1.5 font-bold text-[#C9973D] hover:underline"
+                          >
+                            <span>Ir para a página de ativação do teste</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -267,7 +299,7 @@ export default function TenantLoginPage() {
                         type="button"
                         onClick={() =>
                           setErrorMsg(
-                            "Para recuperar sua senha administrativa, solicite ao administrador mestre do seu instituto o reenvio de acesso."
+                            "Para recuperar sua senha administrativa, solicite ao suporte institucional ou verifique se sua conta foi ativada."
                           )
                         }
                         className="text-[11px] font-medium text-[#C9973D] hover:underline cursor-pointer"
@@ -325,15 +357,17 @@ export default function TenantLoginPage() {
                   </div>
                 </form>
 
-                {/* Nota Institucional e Criptografia */}
-                <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col items-center gap-2 text-center">
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    É discente? O acesso do aluno é realizado através do endereço exclusivo da sua instituição.
+                {/* Rodapé Interno do Card */}
+                <div className="mt-6 pt-5 border-t border-slate-100 text-center">
+                  <p className="text-xs text-slate-500">
+                    Sua escola ainda não possui TeoClass?{" "}
+                    <Link
+                      href="/"
+                      className="text-[#C9973D] font-bold hover:underline"
+                    >
+                      Teste grátis por 7 dias
+                    </Link>
                   </p>
-                  <div className="flex items-center gap-1.5 text-slate-400 text-[11px] pt-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Ambiente restrito e com criptografia SSL</span>
-                  </div>
                 </div>
 
               </div>
@@ -345,18 +379,17 @@ export default function TenantLoginPage() {
 
       {/* 
         ========================================================================
-        4. RODAPÉ INSTITUCIONAL DISCRETO
+        4. RODAPÉ INFERIOR ELEGANTE
         ========================================================================
       */}
-      <footer className="relative z-20 w-full bg-[#071322]/90 border-t border-slate-800/80 py-4 px-6 lg:px-12 backdrop-blur-xs">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-          <p>© 2026 TeoClass — Plataforma para Escolas Teológicas. Todos os direitos reservados.</p>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Multi-tenant Hermético</span>
-            </span>
-          </div>
+      <footer className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-5 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-300 border-t border-white/10">
+        <p>© {new Date().getFullYear()} TeoClass. Todos os direitos reservados.</p>
+        <div className="flex items-center gap-4 text-slate-300">
+          <span>Ambiente Seguro SSL 256-bit</span>
+          <span>•</span>
+          <Link href="/" className="hover:text-white transition-colors">
+            Termos de Uso
+          </Link>
         </div>
       </footer>
     </div>

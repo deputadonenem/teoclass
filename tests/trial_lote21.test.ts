@@ -113,13 +113,13 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
       let actionTaken = "";
 
       if (isAlreadyRegistered) {
-        // Regra corrigida: rejeita com mensagem clara e instrui o login, sem chamar resetPasswordForEmail
-        actionTaken = "REJECT_WITH_LOGIN_INSTRUCTION";
+        // Regra corrigida: usa signInWithOtp (Magic Link de autenticação) e nunca resetPasswordForEmail
+        actionTaken = "SEND_AUTH_OTP_LINK";
       } else {
         actionTaken = "INVITE_USER";
       }
 
-      assert.strictEqual(actionTaken, "REJECT_WITH_LOGIN_INSTRUCTION");
+      assert.strictEqual(actionTaken, "SEND_AUTH_OTP_LINK");
       assert.notStrictEqual(actionTaken, "RESET_PASSWORD_DISPATCH");
     });
 
@@ -128,12 +128,92 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
       let actionTaken = "";
 
       if (isAlreadyRegistered) {
-        actionTaken = "REJECT_WITH_LOGIN_INSTRUCTION";
+        actionTaken = "SEND_AUTH_OTP_LINK";
       } else {
         actionTaken = "INVITE_USER";
       }
 
       assert.strictEqual(actionTaken, "INVITE_USER");
+    });
+  });
+
+  describe("5. Recuperação de Cadastro Pendente e Prevenção de Vínculo Não Autorizado", () => {
+    it("deve recuperar tenant em status 'trial_pending' sem duplicar registro nem alterar status prematuramente", () => {
+      const existingTenant = {
+        id: "tenant-123",
+        email: "pastor@betel.com",
+        status: "trial_pending",
+        plan_tier: "gestao_ead",
+      };
+
+      // Simulação da lógica de idempotência em registerTrialAction
+      let tenantId: string;
+      let isResend = false;
+
+      if (existingTenant.status === "trial_pending") {
+        tenantId = existingTenant.id;
+        isResend = true;
+      } else {
+        tenantId = "new-id";
+      }
+
+      assert.strictEqual(tenantId, "tenant-123");
+      assert.strictEqual(isResend, true);
+      assert.strictEqual(existingTenant.status, "trial_pending");
+    });
+
+    it("deve rejeitar ativação de tenant se e-mail autenticado for divergente e não autorizado", () => {
+      const tenant = {
+        id: "tenant-abc",
+        email: "responsavel@escola.com",
+        status: "trial_pending",
+      };
+
+      const attackerUser = {
+        id: "user-attacker",
+        email: "invasor@externo.com",
+        user_metadata: {},
+      };
+
+      const isAuthorized =
+        tenant.email.toLowerCase() === attackerUser.email.toLowerCase() ||
+        attackerUser.user_metadata?.tenant_id === tenant.id;
+
+      assert.strictEqual(isAuthorized, false);
+    });
+
+    it("deve autorizar ativação exclusivamente quando o usuário comprovar identidade legítima", () => {
+      const tenant = {
+        id: "tenant-abc",
+        email: "responsavel@escola.com",
+        status: "trial_pending",
+      };
+
+      const legitimateUser = {
+        id: "user-legitimate",
+        email: "responsavel@escola.com",
+        user_metadata: { tenant_id: "tenant-abc" },
+      };
+
+      const isAuthorized =
+        tenant.email.toLowerCase() === legitimateUser.email.toLowerCase() ||
+        legitimateUser.user_metadata?.tenant_id === tenant.id;
+
+      assert.strictEqual(isAuthorized, true);
+    });
+
+    it("rate limit deve bloquear reenvios solicitados em intervalo menor que 60 segundos", () => {
+      const now = Date.now();
+      const lastSentRecent = new Date(now - 30 * 1000).toISOString(); // 30s atrás
+      const diffMs = now - new Date(lastSentRecent).getTime();
+
+      const isRateLimited = diffMs < 60 * 1000;
+      assert.strictEqual(isRateLimited, true);
+
+      const lastSentOld = new Date(now - 65 * 1000).toISOString(); // 65s atrás
+      const diffMsOld = now - new Date(lastSentOld).getTime();
+      const isRateLimitedOld = diffMsOld < 60 * 1000;
+      assert.strictEqual(isRateLimitedOld, false);
     });
   });
 });

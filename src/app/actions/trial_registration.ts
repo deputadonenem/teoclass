@@ -16,6 +16,8 @@ export interface RegisterTrialResult {
   success: boolean;
   tenantSlug?: string;
   isResend?: boolean;
+  pendingActivation?: boolean;
+  tenantId?: string;
   error?: string;
 }
 
@@ -38,10 +40,10 @@ function generateSlug(text: string): string {
  * 1. Valida dados de entrada (nome, e-mail, telefone, CNPJ) e previne duplicidade.
  * 2. Suporta reenvio seguro de convite se o tenant já estiver em 'trial_pending'.
  * 3. Cria/recupera o tenant em status 'trial_pending' (os 7 dias ainda NÃO são iniciados aqui).
- * 4. Dispara convite nativo do Supabase Auth (admin.auth.admin.inviteUserByEmail) com redirecionamento para /app/ativar.
- * 5. Tratamento de usuários já existentes no Supabase Auth:
- *    - Se o usuário já possui conta e já possui vínculo ativo com escola: instrui acesso via /app/login.
- *    - Se o usuário já possui conta mas sem vínculo ativo (ou pendente): informa claramente para acessar o login existente ou contatar suporte, NUNCA disparando resetPasswordForEmail como se fosse convite.
+ * 4. Disparo seguro de convite/link de autenticação via Supabase Auth:
+ *    - Se usuário novo: inviteUserByEmail.
+ *    - Se usuário já existente no Auth mas com tenant em trial_pending: envia signInWithOtp (Magic Link de autenticação), NUNCA resetPasswordForEmail.
+ *    - Se usuário já possuir escola ativa no TeoClass: instrui acesso pelo login da gestão.
  */
 export async function registerTrialAction(
   input: RegisterTrialInput
@@ -112,7 +114,7 @@ export async function registerTrialAction(
         .maybeSingle();
 
       if (existingProfile) {
-        // Verifica se possui vínculos em tenant_users
+        // Verifica se possui vínculos ativos em tenant_users
         const { data: userMemberships } = await (admin.from("tenant_users") as any)
           .select("id, tenant_id, role, status")
           .eq("user_id", existingProfile.id)
@@ -179,6 +181,7 @@ export async function registerTrialAction(
           settings: {
             created_via: "trial_landing_page",
             admin_name: adminName,
+            last_activation_email_at: new Date().toISOString(),
           },
         })
         .select("id, slug, name")
@@ -193,8 +196,7 @@ export async function registerTrialAction(
       tenantSlug = createdTenant.slug;
     }
 
-    // 5. Disparo Exclusivo de Convite Nativo via Supabase Auth (inviteUserByEmail)
-    // NUNCA disparar resetPasswordForEmail como se fosse convite de cadastro!
+    // 5. Disparo de Convite / Link de Ativação via Supabase Auth
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://teoclass.vercel.app";
     const redirectTo = `${appUrl}/app/ativar?tenant_id=${tenantId}`;
 
@@ -219,10 +221,38 @@ export async function registerTrialAction(
         (inviteErr as any).status === 422;
 
       if (isAlreadyRegistered) {
+        // Se o e-mail já existe no Auth mas o tenant está pendente (ex: cadastro anterior interrompido),
+        // enviamos um Magic Link de autenticação (signInWithOtp), que estabelece a sessão e redireciona
+        // para /app/ativar sem chamar recuperação de senha (reset password).
+        const { error: otpErr } = await admin.auth.signInWithOtp({
+          email: adminEmail,
+          options: {
+            emailRedirectTo: redirectTo,
+            data: {
+              tenant_id: tenantId,
+              full_name: adminName,
+            },
+          },
+        });
+
+        if (otpErr) {
+          console.error("[TRIAL_SUPABASE_OTP_ERROR]", otpErr);
+          return {
+            success: false,
+            isResend,
+            pendingActivation: true,
+            tenantId,
+            error: `Não foi possível enviar o link de ativação para ${adminEmail}: ${otpErr.message}`,
+          };
+        }
+
+        // Sucesso no envio do link de autenticação/ativação
         return {
-          success: false,
+          success: true,
+          tenantSlug,
           isResend,
-          error: "Este e-mail já está cadastrado no sistema TeoClass. Se você já possui cadastro, acesse a página de login da gestão para entrar.",
+          pendingActivation: true,
+          tenantId,
         };
       }
 
@@ -237,6 +267,8 @@ export async function registerTrialAction(
       success: true,
       tenantSlug,
       isResend,
+      pendingActivation: false,
+      tenantId,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Erro inesperado ao registrar teste gratuito.";

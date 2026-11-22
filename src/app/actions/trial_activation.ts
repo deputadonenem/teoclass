@@ -17,6 +17,7 @@ export interface ConfirmTrialActivationResult {
  * 2. Verifica se o e-mail do usuário está confirmado pelo Supabase Auth.
  * 3. Localiza o tenant vinculado que esteja com status 'trial_pending'.
  * 4. Garante de forma atômica e idempotente:
+ *    - Validação de identidade: o e-mail do usuário autenticado DEVE coincidir com o e-mail registrado no tenant (ou nos metadados autorizados).
  *    - Transição do status do tenant de 'trial_pending' para 'trial'.
  *    - Início dos 7 dias exatos: trial_ends_at = now() + 7 days.
  *    - Vínculo do usuário como 'admin' em public.tenant_users com status 'active'.
@@ -56,7 +57,7 @@ export async function confirmTrialActivationAction(
       if (tenantByEmail) {
         targetTenantId = tenantByEmail.id;
       } else {
-        // Tenta recuperar dos metadados do usuário
+        // Tenta recuperar dos metadados do usuário caso exista
         const metaTenantId = user.user_metadata?.tenant_id;
         if (metaTenantId) {
           targetTenantId = metaTenantId;
@@ -71,14 +72,27 @@ export async function confirmTrialActivationAction(
       };
     }
 
-    // 2. Busca o Tenant e valida status
+    // 2. Busca o Tenant e valida status e autorização do vínculo
     const { data: tenant, error: tenantErr } = await (admin.from("tenants") as any)
-      .select("id, name, status, settings")
+      .select("id, name, email, status, settings")
       .eq("id", targetTenantId)
       .single();
 
     if (tenantErr || !tenant) {
       return { success: false, error: "Instituição teológica associada não localizada." };
+    }
+
+    // Validação estrita de autorização: o usuário autenticado deve corresponder ao e-mail cadastrado
+    const tenantEmail = (tenant.email || "").toLowerCase();
+    const metaTenantId = user.user_metadata?.tenant_id;
+    const isAuthorized = tenantEmail === userEmail || metaTenantId === tenant.id;
+
+    if (!isAuthorized) {
+      console.warn(`[TRIAL_ACTIVATION_SECURITY_REJECT] Usuário ${userEmail} tentou ativar tenant ${tenant.id} (${tenantEmail}) sem autorização.`);
+      return {
+        success: false,
+        error: "Usuário autenticado não possui autorização para ativar esta instituição.",
+      };
     }
 
     // Se já estiver em trial ativo, retorna sucesso idempotente
