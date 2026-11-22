@@ -98,10 +98,10 @@ export function StudentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-hidden">
+      <div className="bg-white rounded-2xl max-w-2xl w-full h-[90vh] sm:h-[620px] max-h-[92vh] shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+        {/* Header - Fixo */}
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
               <User className="w-4 h-4" />
@@ -124,12 +124,12 @@ export function StudentModal({
           </button>
         </div>
 
-        {/* Tabs de Navegação Interna */}
-        <div className="px-6 border-b border-slate-200 flex gap-4 text-xs font-semibold text-slate-500">
+        {/* Tabs de Navegação Interna - Fixas */}
+        <div className="px-6 border-b border-slate-200 flex gap-4 text-xs font-semibold text-slate-500 shrink-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab("dados")}
-            className={`py-3 border-b-2 transition-colors ${
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "dados"
                 ? "border-indigo-600 text-indigo-700"
                 : "border-transparent hover:text-slate-700"
@@ -140,7 +140,7 @@ export function StudentModal({
           <button
             type="button"
             onClick={() => setActiveTab("eclesiastico")}
-            className={`py-3 border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`py-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "eclesiastico"
                 ? "border-indigo-600 text-indigo-700"
                 : "border-transparent hover:text-slate-700"
@@ -152,7 +152,7 @@ export function StudentModal({
           <button
             type="button"
             onClick={() => setActiveTab("endereco")}
-            className={`py-3 border-b-2 transition-colors ${
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "endereco"
                 ? "border-indigo-600 text-indigo-700"
                 : "border-transparent hover:text-slate-700"
@@ -162,254 +162,256 @@ export function StudentModal({
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl">
-              {errorMsg}
-            </div>
-          )}
+        {/* Form Body - Área interna rolável com formulário flex flex-col flex-1 */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+            {errorMsg && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl">
+                {errorMsg}
+              </div>
+            )}
 
-          {activeTab === "dados" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {activeTab === "dados" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Nome *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.first_name}
+                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="Primeiro nome"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Sobrenome *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.last_name}
+                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="Sobrenome completo"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      CPF
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.cpf || ""}
+                      onChange={(e) => setFormData({ ...formData, cpf: formatCpf(e.target.value) })}
+                      maxLength={14}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      RG
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.rg || ""}
+                      onChange={(e) => setFormData({ ...formData, rg: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="Número do documento"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Data de Nascimento
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.birth_date || ""}
+                      onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      E-mail
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email || ""}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="aluno@exemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Telefone / WhatsApp
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.whatsapp || formData.phone || ""}
+                      onChange={(e) => {
+                        const formatted = formatPhone(e.target.value);
+                        setFormData({ ...formData, whatsapp: formatted, phone: formatted });
+                      }}
+                      maxLength={15}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "eclesiastico" && (
+              <div className="space-y-4">
+                <div className="p-3 bg-amber-50/60 border border-amber-200/60 rounded-xl text-[11px] text-amber-800 leading-relaxed">
+                  As informações ministeriais são <strong>estritamente opcionais</strong> para cadastro no seminário, sem exigência de dados sensíveis ou confissão obrigatória.
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Nome *
+                    Igreja Local ou Congregação
                   </label>
                   <input
                     type="text"
-                    required
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    value={formData.church_name || ""}
+                    onChange={(e) => setFormData({ ...formData, church_name: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="Primeiro nome"
+                    placeholder="Nome da igreja que congrega"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Pastor / Líder Responsável
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.pastor_name || ""}
+                      onChange={(e) => setFormData({ ...formData, pastor_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="Nome do pastor local"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Atuação Ministerial
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.ministry_role || ""}
+                      onChange={(e) => setFormData({ ...formData, ministry_role: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="Ex: Diácono, Líder de Jovens, Membro"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "endereco" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Logradouro / Rua
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.street || ""}
+                      onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="Rua, Avenida, etc."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Número
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.number || ""}
+                      onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="123"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Cidade
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.city || ""}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Estado (UF)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={2}
+                      value={formData.state || ""}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="SP"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      CEP
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.postal_code || ""}
+                      onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      placeholder="00000-000"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Sobrenome *
+                    Observações Gerais da Secretaria
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  <textarea
+                    rows={2}
+                    value={formData.general_notes || ""}
+                    onChange={(e) => setFormData({ ...formData, general_notes: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="Sobrenome completo"
+                    placeholder="Histórico prévio, objetivos com o curso, etc."
                   />
                 </div>
               </div>
+            )}
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    CPF
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.cpf || ""}
-                    onChange={(e) => setFormData({ ...formData, cpf: formatCpf(e.target.value) })}
-                    maxLength={14}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    RG
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.rg || ""}
-                    onChange={(e) => setFormData({ ...formData, rg: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="Número do documento"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Data de Nascimento
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.birth_date || ""}
-                    onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    E-mail
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email || ""}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="aluno@exemplo.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Telefone / WhatsApp
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.whatsapp || formData.phone || ""}
-                    onChange={(e) => {
-                      const formatted = formatPhone(e.target.value);
-                      setFormData({ ...formData, whatsapp: formatted, phone: formatted });
-                    }}
-                    maxLength={15}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "eclesiastico" && (
-            <div className="space-y-4">
-              <div className="p-3 bg-amber-50/60 border border-amber-200/60 rounded-xl text-[11px] text-amber-800 leading-relaxed">
-                As informações ministeriais são <strong>estritamente opcionais</strong> para cadastro no seminário, sem exigência de dados sensíveis ou confissão obrigatória.
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Igreja Local ou Congregação
-                </label>
-                <input
-                  type="text"
-                  value={formData.church_name || ""}
-                  onChange={(e) => setFormData({ ...formData, church_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  placeholder="Nome da igreja que congrega"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Pastor / Líder Responsável
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.pastor_name || ""}
-                    onChange={(e) => setFormData({ ...formData, pastor_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="Nome do pastor local"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Atuação Ministerial
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.ministry_role || ""}
-                    onChange={(e) => setFormData({ ...formData, ministry_role: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="Ex: Diácono, Líder de Jovens, Membro"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "endereco" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Logradouro / Rua
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.street || ""}
-                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="Rua, Avenida, etc."
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Número
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.number || ""}
-                    onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="123"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Cidade
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.city || ""}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Estado (UF)
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={2}
-                    value={formData.state || ""}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="SP"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    CEP
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.postal_code || ""}
-                    onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    placeholder="00000-000"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Observações Gerais da Secretaria
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.general_notes || ""}
-                  onChange={(e) => setFormData({ ...formData, general_notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  placeholder="Histórico prévio, objetivos com o curso, etc."
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Footer Action Buttons */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          {/* Footer Action Buttons - Fixo */}
+          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3 bg-slate-50/50 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+              className="px-4 py-2 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             >
               Cancelar
             </button>
