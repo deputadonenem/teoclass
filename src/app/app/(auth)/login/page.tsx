@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/landing/Logo";
+import { reconcileAdminMembershipAction } from "@/app/actions/reconcile_membership";
 import {
   Lock,
   Mail,
@@ -17,7 +18,7 @@ import {
   Users,
   ShieldCheck,
   Briefcase,
-  RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function TenantLoginPage() {
@@ -49,7 +50,7 @@ export default function TenantLoginPage() {
       }
 
       if (data.user) {
-        // 1. Verifica vínculos em tenant_users
+        // 1. Verifica vínculos ativos em tenant_users
         const { data: tenantUsers, error: tuErr } = await (supabase
           .from("tenant_users") as any)
           .select("id, is_active, tenant_id, role")
@@ -57,26 +58,33 @@ export default function TenantLoginPage() {
           .eq("is_active", true);
 
         if (tuErr || !tenantUsers || tenantUsers.length === 0) {
-          // 2. Se não tem vínculo ativo, verifica se existe cadastro pendente de ativação (trial_pending)
-          const { data: pendingTenant } = await (supabase
-            .from("tenants") as any)
-            .select("id, name, status")
-            .eq("email", email.toLowerCase())
-            .eq("status", "trial_pending")
-            .maybeSingle();
+          // 2. Se não encontrou vínculo ativo via cliente, chama a Server Action segura
+          // A action obtém a identidade exclusivamente pela sessão validada no servidor (auth.getUser())
+          // e valida rigorosamente se este usuário autenticado é o responsável legítimo
+          const reconcileRes = await reconcileAdminMembershipAction();
 
-          if (pendingTenant) {
-            setPendingActivationTenantId(pendingTenant.id);
+          if (reconcileRes.hasActiveMembership) {
+            // Reconciliação autorizada com sucesso! Redireciona para o painel de gestão
+            router.push("/app/dashboard");
+            router.refresh();
+            return;
+          }
+
+          // Se tiver cadastro em trial_pending mas necessitar concluir ativação de senha
+          if (reconcileRes.tenantId && reconcileRes.status === "trial_pending") {
+            setPendingActivationTenantId(reconcileRes.tenantId);
             setErrorMsg(
-              `A sua instituição (${pendingTenant.name}) ainda está com a ativação pendente. Conclua a ativação para iniciar o seu período de teste de 7 dias.`
+              `A sua instituição (${reconcileRes.tenantName}) ainda está com a ativação pendente. Conclua a ativação para iniciar o seu período de teste de 7 dias.`
             );
             setLoading(false);
             return;
           }
 
+          // Se não há instituição autorizada nem pendente
           await supabase.auth.signOut();
           setErrorMsg(
-            "Sua conta não possui vínculo ativo com nenhuma instituição teológica cadastrada."
+            reconcileRes.message ||
+              "Sua conta não possui vínculo ativo com nenhuma instituição teológica cadastrada."
           );
           setLoading(false);
           return;

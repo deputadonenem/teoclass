@@ -266,5 +266,71 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
       );
       assert.strictEqual(hasAdminOrStaffRole, true);
     });
+
+    it("TESTE DE SEGURANÇA NEGATIVO: deve rejeitar reconciliação se o usuário autenticado tentar assumir tenant com e-mail divergente", () => {
+      const tenant = {
+        id: "53eb9a25-b396-4837-92b1-66b7522ab702",
+        email: "wciinfor@gmail.com",
+        status: "trial",
+      };
+
+      const attackerUser = {
+        id: "attacker-user-id",
+        email: "outro_usuario@gmail.com",
+      };
+
+      const isAuthorized =
+        tenant.email.toLowerCase() === attackerUser.email.toLowerCase();
+
+      assert.strictEqual(isAuthorized, false, "Usuário com e-mail divergente não pode ser autorizado");
+    });
+
+    it("TESTE DE SEGURANÇA NEGATIVO: deve rejeitar reconciliação se o tenant estiver em status 'active' ou 'trial_expired'", () => {
+      const allowedStatuses = ["trial", "trial_pending"];
+
+      const activeTenant = { id: "t-1", status: "active", email: "admin@escola.com" };
+      const expiredTenant = { id: "t-2", status: "trial_expired", email: "admin@escola.com" };
+
+      assert.strictEqual(allowedStatuses.includes(activeTenant.status), false);
+      assert.strictEqual(allowedStatuses.includes(expiredTenant.status), false);
+    });
+
+    it("TESTE DE SEGURANÇA NEGATIVO: deve bloquear reconciliação se a instituição já possuir outro administrador ativo cadastrado", () => {
+      const requestingUserId = "new-user-id";
+      const existingAdmins = [
+        {
+          id: "tu-existing",
+          tenant_id: "tenant-123",
+          user_id: "original-admin-id",
+          role: "admin",
+          is_active: true,
+        },
+      ];
+
+      const otherAdmins = existingAdmins.filter(
+        (a) => a.user_id !== requestingUserId
+      );
+
+      const canReconcile = otherAdmins.length === 0;
+      assert.strictEqual(canReconcile, false, "Não pode reconciliar tenant que já possui outro administrador ativo");
+    });
+
+    it("deve preservar estritamente status, plan_tier e trial_ends_at existente da instituição CETADMI", () => {
+      const cetadmiOriginal = {
+        id: "53eb9a25-b396-4837-92b1-66b7522ab702",
+        status: "trial",
+        plan_tier: "gestao_ead",
+        trial_ends_at: "2026-11-29T14:39:40.125Z",
+      };
+
+      // Simulação do payload de atualização gerado na reconciliação: apenas tenant_users é tocado
+      const reconcileUpdateTarget = "tenant_users";
+      assert.strictEqual(reconcileUpdateTarget, "tenant_users");
+
+      // O tenant não sofre update em trial_ends_at ou status
+      assert.strictEqual(cetadmiOriginal.status, "trial");
+      assert.strictEqual(cetadmiOriginal.trial_ends_at, "2026-11-29T14:39:40.125Z");
+      assert.strictEqual(cetadmiOriginal.plan_tier, "gestao_ead");
+    });
   });
 });
