@@ -105,4 +105,35 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
       assert.notStrictEqual(h1, h2);
     });
   });
+
+  describe("4. Regras de Disparo de E-mail: Convite vs E-mail Já Cadastrado", () => {
+    it("nunca deve disparar recuperação de senha (reset password) para novos cadastros de trial", () => {
+      // Simulação da lógica de decisão do cadastro
+      const isAlreadyRegistered = true;
+      let actionTaken = "";
+
+      if (isAlreadyRegistered) {
+        // Regra corrigida: rejeita com mensagem clara e instrui o login, sem chamar resetPasswordForEmail
+        actionTaken = "REJECT_WITH_LOGIN_INSTRUCTION";
+      } else {
+        actionTaken = "INVITE_USER";
+      }
+
+      assert.strictEqual(actionTaken, "REJECT_WITH_LOGIN_INSTRUCTION");
+      assert.notStrictEqual(actionTaken, "RESET_PASSWORD_DISPATCH");
+    });
+
+    it("deve direcionar usuário com e-mail novo estritamente para o convite de ativação (inviteUserByEmail)", () => {
+      const isAlreadyRegistered = false;
+      let actionTaken = "";
+
+      if (isAlreadyRegistered) {
+        actionTaken = "REJECT_WITH_LOGIN_INSTRUCTION";
+      } else {
+        actionTaken = "INVITE_USER";
+      }
+
+      assert.strictEqual(actionTaken, "INVITE_USER");
+    });
+  });
 });

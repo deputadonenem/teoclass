@@ -39,7 +39,9 @@ function generateSlug(text: string): string {
  * 2. Suporta reenvio seguro de convite se o tenant já estiver em 'trial_pending'.
  * 3. Cria/recupera o tenant em status 'trial_pending' (os 7 dias ainda NÃO são iniciados aqui).
  * 4. Dispara convite nativo do Supabase Auth (admin.auth.admin.inviteUserByEmail) com redirecionamento para /app/ativar.
- * 5. Caso o usuário já exista no Supabase Auth em pendência, gera link de convite ou instrui acesso.
+ * 5. Tratamento de usuários já existentes no Supabase Auth:
+ *    - Se o usuário já possui conta e já possui vínculo ativo com escola: instrui acesso via /app/login.
+ *    - Se o usuário já possui conta mas sem vínculo ativo (ou pendente): informa claramente para acessar o login existente ou contatar suporte, NUNCA disparando resetPasswordForEmail como se fosse convite.
  */
 export async function registerTrialAction(
   input: RegisterTrialInput
@@ -72,6 +74,7 @@ export async function registerTrialAction(
     let tenantSlug: string;
     let isResend = false;
 
+    // 2.1 Verifica se o e-mail já pertence a um tenant existente na base
     const { data: existingTenantEmail } = await (admin.from("tenants") as any)
       .select("id, name, slug, status")
       .eq("email", adminEmail)
@@ -102,7 +105,28 @@ export async function registerTrialAction(
         };
       }
     } else {
-      // Verifica CNPJ se fornecido
+      // 2.2 Verifica se já existe perfil ou vínculo ativo para este e-mail
+      const { data: existingProfile } = await (admin.from("profiles") as any)
+        .select("id, email")
+        .eq("email", adminEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Verifica se possui vínculos em tenant_users
+        const { data: userMemberships } = await (admin.from("tenant_users") as any)
+          .select("id, tenant_id, role, status")
+          .eq("user_id", existingProfile.id)
+          .eq("status", "active");
+
+        if (userMemberships && userMemberships.length > 0) {
+          return {
+            success: false,
+            error: "Este e-mail já possui um usuário cadastrado com acesso a uma instituição no TeoClass. Acesse o painel pelo login.",
+          };
+        }
+      }
+
+      // 2.3 Verifica CNPJ se fornecido
       if (rawCnpj) {
         const { data: existingCnpj } = await (admin.from("tenants") as any)
           .select("id, name")
@@ -123,7 +147,7 @@ export async function registerTrialAction(
         baseSlug = "instituto-teologico";
       }
 
-      const reserved = ["app", "api", "escola", "verificar", "img", "_next", "favicon.ico"];
+      const reserved = ["app", "api", "escola", "verificar", "img", "_next", "favicon.ico", "auth"];
       if (reserved.includes(baseSlug)) {
         baseSlug = `${baseSlug}-online`;
       }
@@ -169,13 +193,12 @@ export async function registerTrialAction(
       tenantSlug = createdTenant.slug;
     }
 
-    // 5. Disparo do Convite Nativo via Supabase Auth
+    // 5. Disparo Exclusivo de Convite Nativo via Supabase Auth (inviteUserByEmail)
+    // NUNCA disparar resetPasswordForEmail como se fosse convite de cadastro!
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://teoclass.vercel.app";
     const redirectTo = `${appUrl}/app/ativar?tenant_id=${tenantId}`;
 
-    // Dispara convite oficial do Supabase Auth
-    // Se o usuário já existir no auth.users, inviteUserByEmail retornará que o usuário já existe
-    const { data: inviteData, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
+    const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
       adminEmail,
       {
         redirectTo,
@@ -190,33 +213,24 @@ export async function registerTrialAction(
     if (inviteErr) {
       console.warn("[TRIAL_SUPABASE_INVITE_WARN]", inviteErr.message);
 
-      // Se o usuário já existir no Auth, tentamos gerar o link de login mágico/recuperação ou enviar reset
       const isAlreadyRegistered =
         inviteErr.message?.toLowerCase().includes("already registered") ||
         inviteErr.message?.toLowerCase().includes("already exists") ||
         (inviteErr as any).status === 422;
 
       if (isAlreadyRegistered) {
-        // Envia link para redefinir senha e acessar a ativação
-        const { error: resetErr } = await admin.auth.resetPasswordForEmail(adminEmail, {
-          redirectTo,
-        });
-
-        if (resetErr) {
-          console.error("[TRIAL_SUPABASE_RESET_FAIL]", resetErr);
-          return {
-            success: false,
-            isResend,
-            error: "E-mail já cadastrado no sistema. Não foi possível enviar as instruções de ativação. Entre em contato com o suporte.",
-          };
-        }
-      } else {
         return {
           success: false,
           isResend,
-          error: `Falha ao enviar e-mail de ativação via Supabase Auth: ${inviteErr.message}`,
+          error: "Este e-mail já está cadastrado no sistema TeoClass. Se você já possui cadastro, acesse a página de login da gestão para entrar.",
         };
       }
+
+      return {
+        success: false,
+        isResend,
+        error: `Falha ao enviar e-mail de convite de ativação: ${inviteErr.message}`,
+      };
     }
 
     return {
