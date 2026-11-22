@@ -116,6 +116,25 @@ export function Sidebar() {
 
   const roleConfig = role ? ROLE_DEFINITIONS[role] : null;
 
+  // Determina qual item do menu é o mais específico e correspondente à rota atual
+  // Evita correspondência ambígua quando um item é prefixo de outro (ex: /app/academico e /app/academico/boletim)
+  const activeHref = React.useMemo(() => {
+    if (!pathname) return "";
+
+    // Filtra todos os itens que correspondem à rota atual (exata ou prefixo de segmento de rota)
+    const matchingItems = NAV_ITEMS.filter((item) => {
+      if (pathname === item.href) return true;
+      if (pathname.startsWith(`${item.href}/`)) return true;
+      return false;
+    });
+
+    if (matchingItems.length === 0) return "";
+
+    // Seleciona o item com maior especificidade (maior comprimento de href)
+    matchingItems.sort((a, b) => b.href.length - a.href.length);
+    return matchingItems[0].href;
+  }, [pathname]);
+
   const renderSidebarContent = (collapsed: boolean, isDrawer = false) => {
     return (
       <div className="flex flex-col h-full select-none justify-between">
@@ -198,8 +217,7 @@ export function Sidebar() {
               const isAllowedByPlan = hasPlanModuleAccess(planTier, item.module);
               if (!isAllowedByPlan) return null;
 
-              const isActive =
-                pathname === item.href || pathname?.startsWith(`${item.href}/`);
+              const isActive = item.href === activeHref;
               const Icon = item.icon;
 
               return (
