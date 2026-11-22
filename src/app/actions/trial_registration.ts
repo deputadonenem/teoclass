@@ -114,11 +114,11 @@ export async function registerTrialAction(
         .maybeSingle();
 
       if (existingProfile) {
-        // Verifica se possui vínculos ativos em tenant_users
+        // Verifica se possui vínculos ativos em tenant_users (usando is_active: true)
         const { data: userMemberships } = await (admin.from("tenant_users") as any)
-          .select("id, tenant_id, role, status")
+          .select("id, tenant_id, role, is_active")
           .eq("user_id", existingProfile.id)
-          .eq("status", "active");
+          .eq("is_active", true);
 
         if (userMemberships && userMemberships.length > 0) {
           return {

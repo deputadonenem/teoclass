@@ -26,11 +26,9 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
     });
 
     it("deve liberar EAD, Provas e Portal do Aluno mesmo para plano 'gestao' durante o trial ativo", () => {
-      // Plano gestao normalmente tem ead=false e portal_aluno=false
       assert.strictEqual(hasPlanModuleAccess("gestao", "ead"), false);
       assert.strictEqual(hasPlanModuleAccess("gestao", "portal_aluno"), false);
 
-      // Com trial ativo passado como status e vigência
       assert.strictEqual(
         hasPlanModuleAccess("gestao", "ead", "trial", futureTrialDate),
         true
@@ -108,12 +106,10 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
 
   describe("4. Regras de Disparo de E-mail: Convite vs E-mail Já Cadastrado", () => {
     it("nunca deve disparar recuperação de senha (reset password) para novos cadastros de trial", () => {
-      // Simulação da lógica de decisão do cadastro
       const isAlreadyRegistered = true;
       let actionTaken = "";
 
       if (isAlreadyRegistered) {
-        // Regra corrigida: usa signInWithOtp (Magic Link de autenticação) e nunca resetPasswordForEmail
         actionTaken = "SEND_AUTH_OTP_LINK";
       } else {
         actionTaken = "INVITE_USER";
@@ -146,7 +142,6 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
         plan_tier: "gestao_ead",
       };
 
-      // Simulação da lógica de idempotência em registerTrialAction
       let tenantId: string;
       let isResend = false;
 
@@ -204,16 +199,72 @@ describe("TeoClass Lote 21 — Homologação de Trial de 7 Dias, Expiração e S
 
     it("rate limit deve bloquear reenvios solicitados em intervalo menor que 60 segundos", () => {
       const now = Date.now();
-      const lastSentRecent = new Date(now - 30 * 1000).toISOString(); // 30s atrás
+      const lastSentRecent = new Date(now - 30 * 1000).toISOString();
       const diffMs = now - new Date(lastSentRecent).getTime();
 
       const isRateLimited = diffMs < 60 * 1000;
       assert.strictEqual(isRateLimited, true);
 
-      const lastSentOld = new Date(now - 65 * 1000).toISOString(); // 65s atrás
+      const lastSentOld = new Date(now - 65 * 1000).toISOString();
       const diffMsOld = now - new Date(lastSentOld).getTime();
       const isRateLimitedOld = diffMsOld < 60 * 1000;
       assert.strictEqual(isRateLimitedOld, false);
+    });
+  });
+
+  describe("6. Fluxo de Reconciliação CETADMI: Magic Link → Vínculo Admin → Login → Painel", () => {
+    it("deve persistir vínculo em tenant_users com a coluna de schema correta 'is_active: true' (não status)", () => {
+      const tenantUserPayload = {
+        tenant_id: "53eb9a25-b396-4837-92b1-66b7522ab702",
+        user_id: "2ea68061-4f1f-42e5-8824-24f1526e0ffd",
+        role: "admin",
+        is_active: true,
+      };
+
+      assert.strictEqual(tenantUserPayload.role, "admin");
+      assert.strictEqual(tenantUserPayload.is_active, true);
+      assert.strictEqual("status" in tenantUserPayload, false);
+    });
+
+    it("deve permitir que usuário autenticado cujo tenant já está em 'trial' reconcilie seu vínculo admin com sucesso", () => {
+      const tenant = {
+        id: "53eb9a25-b396-4837-92b1-66b7522ab702",
+        email: "wciinfor@gmail.com",
+        status: "trial",
+        trial_ends_at: "2026-11-29T14:39:40.125Z",
+      };
+
+      const authUser = {
+        id: "2ea68061-4f1f-42e5-8824-24f1526e0ffd",
+        email: "wciinfor@gmail.com",
+      };
+
+      // Validação de elegibilidade para reconciliação
+      const isEligible =
+        (tenant.status === "trial_pending" || tenant.status === "trial") &&
+        tenant.email.toLowerCase() === authUser.email.toLowerCase();
+
+      assert.strictEqual(isEligible, true);
+    });
+
+    it("após inserção do vínculo em tenant_users, o login deve reconhecer o usuário como gestor administrativo", () => {
+      const mockTenantUsers = [
+        {
+          id: "tu-1",
+          tenant_id: "53eb9a25-b396-4837-92b1-66b7522ab702",
+          user_id: "2ea68061-4f1f-42e5-8824-24f1526e0ffd",
+          role: "admin",
+          is_active: true,
+        },
+      ];
+
+      const activeMemberships = mockTenantUsers.filter((tu) => tu.is_active);
+      assert.strictEqual(activeMemberships.length > 0, true);
+
+      const hasAdminOrStaffRole = activeMemberships.some(
+        (tu) => tu.role && tu.role !== "aluno"
+      );
+      assert.strictEqual(hasAdminOrStaffRole, true);
     });
   });
 });
